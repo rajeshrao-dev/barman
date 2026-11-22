@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cocktail Recipe Generator</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f1ea; --panel:#fffdf8; --ink:#1f1b16; --muted:#6d655a; --line:#e2dccf;
+  --accent:#b4532a; --accent-ink:#fffdf8; --good:#3b7a57; --warn:#9a6a10; --bad:#a33a2a;
+  --display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15130f; --panel:#1d1a15; --ink:#f2ede3; --muted:#a39a8a; --line:#353027;
+    --accent:#e0795a; --accent-ink:#15130f; --good:#7fc49a; --warn:#e6b35a; --bad:#e8907f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15130f; --panel:#1d1a15; --ink:#f2ede3; --muted:#a39a8a; --line:#353027;
+  --accent:#e0795a; --accent-ink:#15130f; --good:#7fc49a; --warn:#e6b35a; --bad:#e8907f;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-family:var(--display);font-size:22px;font-weight:700;margin:0;line-height:1.2}
+.sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+.main{display:grid;grid-template-columns:340px 1fr;min-height:0}
+form{background:var(--panel);border-right:1px solid var(--line);padding:22px 24px;overflow:auto;display:flex;flex-direction:column;gap:20px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0;margin-bottom:10px}
+.field-label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px}
+select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.opt{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.opt input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{position:relative;cursor:pointer}
+.pill input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.pill span{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px;background:var(--bg)}
+.pill input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.pill input:focus-visible+span,select:focus-visible,.opt input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.restr{display:flex;flex-direction:column;gap:8px}
+button.primary{width:100%;padding:12px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;font:600 15px var(--body);cursor:pointer}
+button.primary:disabled{opacity:.6;cursor:progress}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:500 14px var(--body);cursor:pointer}
+button.ghost:hover{border-color:var(--accent)}
+.output{padding:32px 40px;overflow:auto;min-width:0}
+.notice{max-width:820px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:12px 16px;font-size:14px;margin:0 0 24px}
+.notice.error{border-left-color:var(--bad)}
+.spirit{display:flex;flex-direction:column;gap:18px;margin-bottom:40px;max-width:820px}
+.spirit-head{font-family:var(--display);font-size:26px;font-weight:700;margin:0;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 28px}
+.kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin:0 0 6px}
+.kicker.scouted{color:var(--good)}
+.kicker.invented{color:var(--warn)}
+.name{font-family:var(--display);font-size:28px;font-weight:700;margin:0 0 12px;text-wrap:balance;line-height:1.15}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.chips span{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.cols{display:grid;grid-template-columns:1fr 1.2fr;gap:28px}
+h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+ul.ing{list-style:none;margin:0;padding:0}
+ul.ing li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+ul.ing li span:first-child{color:var(--muted);white-space:nowrap}
+ol.method{margin:0;padding-left:20px}
+ol.method li{margin-bottom:10px;font-size:14px;padding-left:4px}
+.garnish{margin-top:16px;font-size:14px}
+.extra{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:14px}
+.extra p{margin:0 0 8px}
+.extra a{color:var(--accent)}
+.actions{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.status{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);max-width:520px}
+@media (max-width:860px){
+  .main{grid-template-columns:1fr}
+  form{border-right:0;border-bottom:1px solid var(--line)}
+  .cols{grid-template-columns:1fr}
+  .output{padding:24px 18px}
+  .card{padding:20px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Cocktail Recipe Generator</h1>
+      <p class="sub">Pick one or more spirits, tick what you have, and the agent finds recipes for each.</p>
+    </div>
+    <button type="button" class="ghost" id="themeBtn" aria-pressed="false">Toggle theme</button>
+  </header>
+
+  <div class="main">
+    <form id="form" aria-label="Recipe preferences">
+      <fieldset>
+        <legend>Base spirits</legend>
+        <div class="grid2" id="spirits"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ingredients you have</legend>
+        <div class="grid2" id="ings"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Style</legend>
+        <div class="pills" id="styleGroup"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Strength</legend>
+        <div class="pills" id="strengthGroup"></div>
+      </fieldset>
+
+      <div>
+        <label class="field-label" for="occasion">Occasion</label>
+        <select id="occasion" name="occasion"></select>
+      </div>
+
+      <fieldset>
+        <legend>Restrictions</legend>
+        <div class="restr">
+          <label class="opt"><input type="checkbox" name="noSugar"> No added sugar</label>
+          <label class="opt"><input type="checkbox" name="noEgg"> No egg white</label>
+          <label class="opt"><input type="checkbox" name="lowAbv"> Low alcohol (no strong drinks)</label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="primary" id="go">Generate recipes</button>
+    </form>
+
+    <main class="output">
+      <div id="result" aria-live="polite"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+const INGREDIENTS = [
+  ['lime','Lime'],['lemon','Lemon'],['mint','Mint'],['sugar','Sugar or syrup'],
+  ['bitters','Bitters'],['orange','Orange'],['tonic','Tonic water'],['soda','Soda water'],
+  ['ginger-beer','Ginger beer'],['ginger-ale','Ginger ale'],['coke','Coke'],['sprite','Sprite'],
+  ['fanta','Fanta'],['egg','Egg white'],['cucumber','Cucumber'],['salt','Salt']
+];
+const BASES = [
+  ['gin','Gin'],['vodka','Vodka'],['white-rum','White rum'],['bourbon','Bourbon'],
+  ['tequila','Tequila'],['mezcal','Mezcal'],['scotch','Scotch'],['brandy','Brandy']
+];
+const STYLES = [['any','Any'],['dry','Dry'],['balanced','Balanced'],['sweet','Sweet']];
+const STRENGTHS = [['any','Any'],['light','Light'],['medium','Medium'],['strong','Strong']];
+const OCCASIONS = [['any','Any occasion'],['brunch','Brunch'],['party','Party'],['nightcap','Nightcap'],['hot','Hot day']];
+
+const $ = id => document.getElementById(id);
+
+function el(tag, props = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)){
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else n.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c != null) n.append(c); });
+  return n;
+}
+
+function pillGroup(container, name, options, defaultValue){
+  options.forEach(([value, label]) => {
+    const input = el('input', {type:'radio', name, value});
+    if (value === defaultValue) input.checked = true;
+    container.append(el('label', {class:'pill'}, input, el('span', {text:label})));
+  });
+}
+
+function init(){
+  BASES.forEach(([v, l]) => {
+    const input = el('input', {type:'checkbox', name:'spirit', value:v});
+    if (v === 'gin') input.checked = true;
+    $('spirits').append(el('label', {class:'opt'}, input, el('span', {text:l})));
+  });
+  INGREDIENTS.forEach(([v, l]) => {
+    const input = el('input', {type:'checkbox', name:'ing', value:v});
+    if (['lime','tonic'].includes(v)) input.checked = true;
+    $('ings').append(el('label', {class:'opt'}, input, el('span', {text:l})));
+  });
+  OCCASIONS.forEach(([v, l]) => $('occasion').append(el('option', {value:v, text:l})));
+  pillGroup($('styleGroup'), 'style', STYLES, 'any');
+  pillGroup($('strengthGroup'), 'strength', STRENGTHS, 'any');
+
+  $('form').addEventListener('submit', e => { e.preventDefault(); search(); });
+  $('themeBtn').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.hasAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    $('themeBtn').setAttribute('aria-pressed', String(!dark));
+  });
+
+  $('result').append(el('p', {class:'placeholder', text:'Choose a spirit and ingredients, then generate recipes.'}));
+}
+
+function collect(){
+  const checked = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(i => i.value);
+  const restr = {};
+  ['noSugar','noEgg','lowAbv'].forEach(k => restr[k] = !!document.querySelector(`input[name="${k}"]`).checked);
+  return {
+    spirits: checked('spirit'),
+    ingredients: checked('ing'),
+    style: document.querySelector('input[name="style"]:checked').value,
+    strength: document.querySelector('input[name="strength"]:checked').value,
+    occasion: $('occasion').value,
+    restrictions: restr
+  };
+}
+
+async function search(){
+  const body = collect();
+  const out = $('result');
+  const btn = $('go');
+  if (!body.spirits.length){
+    out.replaceChildren(el('div', {class:'notice error', text:'Tick at least one spirit.'}));
+    return;
+  }
+  btn.disabled = true;
+  out.replaceChildren(el('p', {class:'placeholder', text:'Searching for recipes. This can take a little while.'}));
+  try {
+    const res = await fetch('/api/recipes', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status}).`);
+    render(data);
+  } catch (err) {
+    out.replaceChildren(el('div', {class:'notice error', text:`Could not get recipes. ${err.message}`}));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function render(data){
+  const out = $('result');
+  out.replaceChildren();
+  if (data.notes) out.append(el('div', {class:'notice', text:data.notes}));
+
+  const labelFor = Object.fromEntries(BASES.map(([v, l]) => [l, l]));
+  let total = 0;
+  (data.results || []).forEach(res => {
+    const recipes = res.recipes || [];
+    total += recipes.length;
+    const cards = recipes.map(renderRecipe);
+    if (!cards.length) cards.push(el('p', {class:'placeholder', text:'No recipe fit your selections for this spirit.'}));
+    out.append(el('section', {class:'spirit'}, el('h2', {class:'spirit-head', text:res.spirit || labelFor[res.spirit]}), cards));
+  });
+  if (!total && !data.notes) out.append(el('div', {class:'notice', text:'No recipes came back. Try different ingredients or fewer restrictions.'}));
+}
+
+function renderRecipe(r){
+  const ingList = el('ul', {class:'ing'});
+  (r.ingredients || []).forEach(i => {
+    const tag = i.pantry ? 'Pantry' : (i.optional ? 'Optional' : '');
+    ingList.append(el('li', {}, el('span', {text: tag}), el('span', {text: i.text})));
+  });
+
+  const isScouted = r.origin === 'scouted';
+  const kicker = el('p', {class: `kicker ${isScouted ? 'scouted' : 'invented'}`,
+    text: isScouted ? 'Scouted from the web' : 'Invented for you'});
+
+  const extras = [];
+  if (isScouted && r.source) extras.push(el('p', {}, 'Source: ', el('a', {href: r.source, target:'_blank', rel:'noopener noreferrer', text: r.source})));
+  if (r.changes_from_source) extras.push(el('p', {text:`Changed: ${r.changes_from_source}`}));
+  if (r.why_it_works) extras.push(el('p', {text:`Why it works: ${r.why_it_works}`}));
+
+  const copyText = [r.name, `Glass: ${r.glass}. Ice: ${r.ice}.`, '',
+    ...(r.ingredients || []).map(i => (i.optional ? '(optional) ' : '') + i.text), '',
+    ...(r.method || []).map((s, i) => `${i + 1}. ${s}`), '', `Garnish: ${r.garnish}`].join('\n');
+  const status = el('span', {class:'status', role:'status'});
+  const copyBtn = el('button', {type:'button', class:'ghost', text:'Copy recipe'});
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(copyText)
+      .then(() => status.textContent = 'Copied.')
+      .catch(() => status.textContent = 'Copy is blocked here. Select the text instead.');
+  });
+
+  return el('article', {class:'card'},
+    kicker,
+    el('h3', {class:'name', text: r.name}),
+    el('div', {class:'chips'},
+      el('span', {text:`Glass: ${r.glass}`}),
+      el('span', {text:`Ice: ${r.ice}`}),
+      el('span', {text:`Style: ${r.style}`}),
+      el('span', {text:`Strength: ${r.strength}`})),
+    el('div', {class:'cols'},
+      el('div', {}, el('h3', {text:'Ingredients'}), ingList, el('p', {class:'garnish', text:`Garnish: ${r.garnish}`})),
+      el('div', {}, el('h3', {text:'Method'}), el('ol', {class:'method'}, (r.method || []).map(s => el('li', {text:s}))))),
+    extras.length ? el('div', {class:'extra'}, extras) : null,
+    el('div', {class:'actions'}, copyBtn, status)
+  );
+}
+
+init();
+</script>
+</body>
+</html>
