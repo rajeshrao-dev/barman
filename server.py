@@ -20,7 +20,7 @@ API_URL = "https://api.anthropic.com/v1/messages"
 PORT = int(os.environ.get("PORT", "8787"))
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 # Verify this tool version against the current Anthropic docs before deploying.
-WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
+WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search", "max_uses": 3}
 
 SPIRITS = {"gin", "vodka", "white-rum", "bourbon", "tequila", "mezcal", "scotch", "brandy"}
 INGREDIENTS = {"lime", "lemon", "mint", "sugar", "bitters", "orange", "tonic", "soda",
@@ -100,23 +100,30 @@ def call_model(system, user_text):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set.")
-    payload = {
-        "model": MODEL,
-        "max_tokens": 4000,
-        "system": system,
-        "tools": [WEB_SEARCH_TOOL],
-        "messages": [{"role": "user", "content": user_text}],
-    }
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"content-type": "application/json", "x-api-key": key,
-                 "anthropic-version": "2023-06-01"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        data = json.load(resp)
-    return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+    messages = [{"role": "user", "content": user_text}]
+    for _ in range(4):  # web search can pause mid-turn; resume until the reply is complete
+        payload = {
+            "model": MODEL,
+            "max_tokens": 8000,
+            "system": system,
+            "tools": [WEB_SEARCH_TOOL],
+            "messages": messages,
+        }
+        req = urllib.request.Request(
+            API_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"content-type": "application/json", "x-api-key": key,
+                     "anthropic-version": "2023-06-01"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.load(resp)
+        content = data.get("content", [])
+        if data.get("stop_reason") == "pause_turn":
+            messages.append({"role": "assistant", "content": content})
+            continue
+        return "".join(b.get("text", "") for b in content if b.get("type") == "text")
+    return ""
 
 
 def extract_json(text):
@@ -167,7 +174,11 @@ def enforce_restrictions(obj, restrictions):
 
 def generate(request, call=call_model):
     user_text = "Request:\n" + json.dumps(request, indent=2)
-    obj = extract_json(call(SYSTEM_PROMPT, user_text))
+    try:
+        obj = extract_json(call(SYSTEM_PROMPT, user_text))
+    except ValueError:  # one retry with a stricter instruction
+        retry = user_text + "\n\nReply with only the JSON object described in the instructions. No other text."
+        obj = extract_json(call(SYSTEM_PROMPT, retry))
     obj = check_schema(obj)
     return enforce_restrictions(obj, request["restrictions"])
 
