@@ -187,6 +187,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(204, {})
 
+    def do_HEAD(self):
+        # Health checks send HEAD requests; answer them so the platform sees the app as up.
+        self.send_response(200 if self.path in ("/", "/index.html") else 404)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+
     def do_GET(self):
         if self.path not in ("/", "/index.html"):
             return self._send(404, {"error": "Not found."})
@@ -261,6 +267,7 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         selftest()
     else:
-        host = os.environ.get("HOST", "127.0.0.1")  # set HOST=0.0.0.0 when hosting
+        # On Render, PORT is always set, so listen on all addresses unless HOST says otherwise.
+        host = os.environ.get("HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1")
         print(f"Listening on http://{host}:{PORT}/")
         ThreadingHTTPServer((host, PORT), Handler).serve_forever()
