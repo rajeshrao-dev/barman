@@ -37,7 +37,8 @@ SYSTEM_PROMPT = """You are the Cocktail Recipe Agent. You receive a request with
 - occasion: any | brunch | party | nightcap | hot
 - restrictions: noSugar, noEgg, lowAbv (booleans)
 
-For each spirit, return up to 3 recipes:
+For each spirit, return up to 2 recipes. Keep the whole reply short: at most 6 method steps per recipe,
+and keep "notes", "changes_from_source", and "why_it_works" under 25 words each:
 1. Scouted: an established recipe found by web search that fits the request.
    Adapt it to the ingredients on hand and say what changed. Give its source URL.
 2. Invented: one original recipe from the spirit and the user's ingredients,
@@ -104,7 +105,7 @@ def call_model(system, user_text):
     for _ in range(4):  # web search can pause mid-turn; resume until the reply is complete
         payload = {
             "model": MODEL,
-            "max_tokens": 8000,
+            "max_tokens": 16000,
             "system": system,
             "tools": [WEB_SEARCH_TOOL],
             "messages": messages,
